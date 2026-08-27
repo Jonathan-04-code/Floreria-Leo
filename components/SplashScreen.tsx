@@ -2,24 +2,13 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 
-// Variable a nivel de módulo en cliente: persiste durante la navegación SPA,
-// se reinicia únicamente en una recarga completa del navegador (F5 / nuevo tab).
-let hasShownSplashInSession = false
-
 export default function SplashScreen() {
-  const [isVisible, setIsVisible] = useState(() => {
-    if (typeof window !== 'undefined' && hasShownSplashInSession) {
-      return false
-    }
-    return true
-  })
-
+  const [isVisible, setIsVisible] = useState(true)
   const dismissedRef = useRef(false)
 
   const dismissSplash = useCallback(() => {
     if (dismissedRef.current) return
     dismissedRef.current = true
-    hasShownSplashInSession = true
     setIsVisible(false)
     if (typeof window !== 'undefined') {
       document.body.style.overflow = ''
@@ -27,31 +16,21 @@ export default function SplashScreen() {
   }, [])
 
   useEffect(() => {
-    if (hasShownSplashInSession && !isVisible) {
-      if (typeof window !== 'undefined') {
-        document.body.style.overflow = ''
-      }
-      return
-    }
+    if (!isVisible) return
 
-    hasShownSplashInSession = true
-
-    if (typeof window !== 'undefined') {
-      window.scrollTo(0, 0)
-    }
-
+    // Bloquear scroll momentáneamente mientras corre la animación de bienvenida
     const originalOverflow = document.body.style.overflow
     document.body.style.overflow = 'hidden'
 
     const timer = setTimeout(() => {
       dismissSplash()
-    }, 1650)
+    }, 2500)
 
     return () => {
       clearTimeout(timer)
       document.body.style.overflow = originalOverflow
     }
-  }, [dismissSplash, isVisible])
+  }, [isVisible, dismissSplash])
 
   if (!isVisible) return null
 
@@ -78,88 +57,75 @@ export default function SplashScreen() {
         justifyContent: 'center',
         background: 'var(--bg-primary, #FAF5F0)',
         cursor: 'pointer',
+        userSelect: 'none',
+        overflow: 'hidden',
       }}
     >
-      {/* Halo de luz sutil de marca */}
-      <div
-        className="splash-halo"
-        style={{
-          position: 'absolute',
-          width: 'min(420px, 88vw)',
-          height: 'min(420px, 88vw)',
-          borderRadius: '50%',
-          pointerEvents: 'none',
-        }}
-      />
+      {/* Luz ambiental de fondo */}
+      <div className="splash-ambient-bg" />
 
-      {/* Contenedor coordinado: Logo + Texto Bienvenido */}
-      <div
-        className="splash-content-container"
-        style={{
-          position: 'relative',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          textAlign: 'center',
-          padding: '1rem',
-          pointerEvents: 'none',
-        }}
-      >
-        {/* Logo */}
-        <div
-          className="splash-logo-card"
-          style={{
-            position: 'relative',
-            width: 'clamp(180px, 32vw, 240px)',
-            height: 'clamp(180px, 32vw, 240px)',
-            borderRadius: '50%',
-            overflow: 'hidden',
-            boxShadow: '0 12px 36px rgba(216, 90, 127, 0.22)',
-            border: '2px solid rgba(216, 90, 127, 0.25)',
-            background: '#FBECEB',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/img/logo.png"
-            onError={(e) => {
-              const target = e.currentTarget
-              if (!target.dataset.triedFallback) {
-                target.dataset.triedFallback = 'true'
-                target.src = '/img/Logo_Floreria (1).png'
-              }
-            }}
-            alt="Florería Leo"
-            width={240}
-            height={240}
-            style={{
-              width: '100%',
-              height: '100%',
-              objectFit: 'contain',
-            }}
-          />
+      {/* Pétalos florales flotantes decorativos */}
+      <div className="splash-petals-container" aria-hidden="true">
+        <span className="splash-petal petal-1">🌸</span>
+        <span className="splash-petal petal-2">✨</span>
+        <span className="splash-petal petal-3">🌺</span>
+        <span className="splash-petal petal-4">✨</span>
+        <span className="splash-petal petal-5">🌿</span>
+      </div>
+
+      {/* Contenedor central con la animación principal */}
+      <div className="splash-content-container">
+        
+        {/* Contenedor del Logo con Anillo de Luz y Destellos */}
+        <div className="splash-emblem-wrap">
+          {/* Anillo de aura exterior rotatorio */}
+          <div className="splash-aura-ring" aria-hidden="true" />
+          {/* Anillo de pulso floral */}
+          <div className="splash-pulse-halo" aria-hidden="true" />
+
+          {/* Destellos / Estrellas decorativas */}
+          <div className="splash-sparkle sparkle-top-right" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 0L14.59 9.41L24 12L14.59 14.59L12 24L9.41 14.59L0 12L9.41 9.41L12 0Z" />
+            </svg>
+          </div>
+          <div className="splash-sparkle sparkle-bottom-left" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 0L14.59 9.41L24 12L14.59 14.59L12 24L9.41 14.59L0 12L9.41 9.41L12 0Z" />
+            </svg>
+          </div>
+
+          {/* Tarjeta del Logo con destello de luz diagonal (shimmer sweep) */}
+          <div className="splash-logo-card">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/img/logo.png"
+              onError={(e) => {
+                const target = e.currentTarget
+                if (!target.dataset.triedFallback) {
+                  target.dataset.triedFallback = 'true'
+                  target.src = '/img/Logo_Floreria (1).png'
+                }
+              }}
+              alt="Florería Leo"
+              className="splash-logo-image"
+              width={240}
+              height={240}
+            />
+            {/* Destello de brillo diagonal */}
+            <div className="splash-shimmer-ray" aria-hidden="true" />
+          </div>
         </div>
 
         {/* Texto Bienvenido */}
         <p
           id="splash-welcome-title"
-          className="splash-welcome-text"
-          style={{
-            margin: '1.25rem 0 0 0',
-            fontWeight: 600,
-            letterSpacing: '0.14em',
-            textTransform: 'uppercase',
-          }}
+          className="splash-welcome-text font-display"
         >
           Bienvenido
         </p>
+
       </div>
     </div>
   )
 }
-
-

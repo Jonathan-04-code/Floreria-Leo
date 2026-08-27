@@ -37,7 +37,7 @@ export default function FeaturedProductsClient({ products }: Props) {
   const isClient = useIsClient()
 
   return (
-    <section style={{ padding: '4.5rem 1.25rem', position: 'relative', background: 'var(--bg-primary)' }}>
+    <section id="destacados" style={{ padding: '4.5rem 1.25rem', position: 'relative', background: 'var(--bg-primary)' }}>
       <div style={{ maxWidth: '1180px', margin: '0 auto' }}>
         
         {/* Section Header */}

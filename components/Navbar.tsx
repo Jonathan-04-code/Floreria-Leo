@@ -2,14 +2,14 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import ThemeToggle from '@/components/ThemeToggle'
 
 const links = [
-  { href: '/',         label: 'Inicio' },
-  { href: '/catalogo', label: 'Catálogo' },
-  { href: '/#nosotros',label: 'Nosotros' },
-  { href: '/#contacto',label: 'Contacto' },
+  { href: '/',         label: 'Inicio',   targetId: 'top' },
+  { href: '/catalogo', label: 'Catálogo', targetId: 'catalogo' },
+  { href: '/#nosotros',label: 'Nosotros', targetId: 'nosotros' },
+  { href: '/#contacto',label: 'Contacto', targetId: 'contacto' },
 ]
 
 function WhatsAppNavIcon() {
@@ -31,6 +31,53 @@ export default function Navbar() {
     window.addEventListener('scroll', onScroll, { passive: true })
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
+
+  // Soporte para scroll automático si se carga con hash desde otra página
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const hash = window.location.hash
+    if (hash && hash.length > 1) {
+      const id = hash.substring(1)
+      const el = document.getElementById(id)
+      if (el) {
+        setTimeout(() => {
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        }, 100)
+      }
+    }
+  }, [pathname])
+
+  const handleNavAction = useCallback((e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+    setOpen(false)
+
+    if (href === '/') {
+      if (pathname === '/') {
+        e.preventDefault()
+        window.scrollTo({ top: 0, behavior: 'smooth' })
+      }
+      return
+    }
+
+    if (href === '/catalogo') {
+      if (pathname === '/catalogo') {
+        e.preventDefault()
+        window.scrollTo({ top: 0, behavior: 'smooth' })
+      }
+      return
+    }
+
+    if (href.startsWith('/#')) {
+      const targetId = href.replace('/#', '')
+      if (pathname === '/') {
+        e.preventDefault()
+        const targetElement = document.getElementById(targetId)
+        if (targetElement) {
+          targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' })
+          window.history.pushState(null, '', `/#${targetId}`)
+        }
+      }
+    }
+  }, [pathname])
 
   const whatsappQuoteUrl = 'https://wa.me/5215619167705?text=Hola,%20me%20gustar%C3%ADa%20cotizar%20un%20arreglo%20floral%20en%20Florer%C3%ADa%20Leo'
 
@@ -64,7 +111,12 @@ export default function Navbar() {
           }}
         >
           {/* Brand — Florería Leo */}
-          <Link href="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center' }}>
+          <Link
+            href="/"
+            prefetch={true}
+            onClick={(e) => handleNavAction(e, '/')}
+            style={{ textDecoration: 'none', display: 'flex', alignItems: 'center' }}
+          >
             <span
               className="font-display"
               style={{
@@ -84,16 +136,28 @@ export default function Navbar() {
 
           {/* Desktop nav links */}
           <div className="nav-desktop" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-            {links.map(({ href, label }) => (
-              <Link
-                key={href}
-                href={href}
-                className={`nav-link${pathname === href ? ' active' : ''}`}
-                style={{ display: 'inline-flex', alignItems: 'center', fontWeight: 600, fontSize: '0.92rem', padding: '0.5rem 0.95rem' }}
-              >
-                {label}
-              </Link>
-            ))}
+            {links.map(({ href, label }) => {
+              const isActive = (href === '/' && pathname === '/') || (href === '/catalogo' && pathname === '/catalogo')
+              return (
+                <Link
+                  key={href}
+                  href={href}
+                  prefetch={true}
+                  onClick={(e) => handleNavAction(e, href)}
+                  className={`nav-link${isActive ? ' active' : ''}`}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    fontWeight: 600,
+                    fontSize: '0.92rem',
+                    padding: '0.5rem 0.95rem',
+                    transition: 'all 0.15s ease',
+                  }}
+                >
+                  {label}
+                </Link>
+              )
+            })}
           </div>
 
           {/* Desktop right actions: WhatsApp Cotizar CTA + ThemeToggle */}
@@ -163,26 +227,31 @@ export default function Navbar() {
               zIndex: 99,
             }}
           >
-            {links.map(({ href, label }) => (
-              <Link
-                key={href}
-                href={href}
-                onClick={() => setOpen(false)}
-                style={{
-                  textDecoration: 'none',
-                  padding: '0.75rem 1rem',
-                  borderRadius: '0.85rem',
-                  fontWeight: 600,
-                  fontSize: '0.95rem',
-                  color: pathname === href ? 'var(--accent)' : 'var(--text-primary)',
-                  backgroundColor: pathname === href ? 'var(--bg-rose-card)' : 'transparent',
-                  display: 'flex',
-                  alignItems: 'center',
-                }}
-              >
-                {label}
-              </Link>
-            ))}
+            {links.map(({ href, label }) => {
+              const isActive = (href === '/' && pathname === '/') || (href === '/catalogo' && pathname === '/catalogo')
+              return (
+                <Link
+                  key={href}
+                  href={href}
+                  prefetch={true}
+                  onClick={(e) => handleNavAction(e, href)}
+                  style={{
+                    textDecoration: 'none',
+                    padding: '0.75rem 1rem',
+                    borderRadius: '0.85rem',
+                    fontWeight: 600,
+                    fontSize: '0.95rem',
+                    color: isActive ? 'var(--accent)' : 'var(--text-primary)',
+                    backgroundColor: isActive ? 'var(--bg-rose-card)' : 'transparent',
+                    display: 'flex',
+                    alignItems: 'center',
+                    transition: 'all 0.15s ease',
+                  }}
+                >
+                  {label}
+                </Link>
+              )
+            })}
 
             <div style={{ marginTop: '0.5rem', paddingTop: '0.75rem', borderTop: '1px solid var(--border)' }}>
               <a
