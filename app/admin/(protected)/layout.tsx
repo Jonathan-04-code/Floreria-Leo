@@ -2,6 +2,8 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import AdminShell from '@/components/admin/AdminShell'
 
+export const dynamic = 'force-dynamic'
+
 export const metadata = {
   title: 'Panel Administrativo – Florería Leo',
   description: 'Gestión integral de catálogo, productos y configuración',
