@@ -1,0 +1,6 @@
+{
+  "name": "Florería Leo",
+  "description": "Tienda y catálogo de arreglos florales, ramos y flores exclusivas con cotización rápida por WhatsApp.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
