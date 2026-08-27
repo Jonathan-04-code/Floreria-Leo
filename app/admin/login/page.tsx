@@ -3,6 +3,8 @@ import { createClient } from '@/lib/supabase/server'
 import AdminLoginForm from '@/components/admin/AdminLoginForm'
 import { Flower2 } from 'lucide-react'
 
+export const dynamic = 'force-dynamic'
+
 export const metadata = {
   title: 'Acceso Administrativo – Florería Leo',
   description: 'Iniciar sesión en el panel de control de Florería Leo',
