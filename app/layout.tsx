@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { Poppins, Montserrat, Playfair_Display, Cormorant_Garamond } from 'next/font/google'
+import SplashScreen from '@/components/SplashScreen'
 import './globals.css'
 
 const poppins = Poppins({
@@ -42,12 +43,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html
       lang="es"
       className={`${poppins.variable} ${montserrat.variable} ${playfair.variable} ${cormorant.variable}`}
-      data-scroll-behavior="smooth"
-      suppressHydrationWarning
     >
       <body>
-        {/* Script sincrónico anti-flash: aplica el tema antes de que React pinte */}
-        <script dangerouslySetInnerHTML={{ __html: `try{var t=localStorage.getItem('fl-theme-v2');if(t==='dark')document.documentElement.setAttribute('data-theme','dark');else document.documentElement.removeAttribute('data-theme');}catch(e){}` }} />
+        <SplashScreen />
         {children}
       </body>
     </html>

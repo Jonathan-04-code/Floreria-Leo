@@ -1,31 +1,48 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
-import FloralImage from '@/components/FloralImage'
-import { LOGO_BLUR_DATA_URL } from '@/lib/image-constants'
+import { useState, useEffect, useCallback, useRef } from 'react'
+
+// Variable a nivel de módulo en cliente: persiste durante la navegación SPA,
+// se reinicia únicamente en una recarga completa del navegador (F5 / nuevo tab).
+let hasShownSplashInSession = false
 
 export default function SplashScreen() {
-  const [isVisible, setIsVisible] = useState(true)
+  const [isVisible, setIsVisible] = useState(() => {
+    if (typeof window !== 'undefined' && hasShownSplashInSession) {
+      return false
+    }
+    return true
+  })
+
+  const dismissedRef = useRef(false)
 
   const dismissSplash = useCallback(() => {
+    if (dismissedRef.current) return
+    dismissedRef.current = true
+    hasShownSplashInSession = true
     setIsVisible(false)
     if (typeof window !== 'undefined') {
-      window.scrollTo(0, 0)
       document.body.style.overflow = ''
     }
   }, [])
 
   useEffect(() => {
-    // Asegurar que la pantalla esté posicionada hasta arriba del todo
+    if (hasShownSplashInSession && !isVisible) {
+      if (typeof window !== 'undefined') {
+        document.body.style.overflow = ''
+      }
+      return
+    }
+
+    hasShownSplashInSession = true
+
     if (typeof window !== 'undefined') {
       window.scrollTo(0, 0)
     }
 
-    // Bloquear scroll momentáneamente durante la animación de entrada
     const originalOverflow = document.body.style.overflow
     document.body.style.overflow = 'hidden'
 
-    // Desmontar automáticamente después de 1.65 segundos
     const timer = setTimeout(() => {
       dismissSplash()
     }, 1650)
@@ -34,7 +51,7 @@ export default function SplashScreen() {
       clearTimeout(timer)
       document.body.style.overflow = originalOverflow
     }
-  }, [dismissSplash])
+  }, [dismissSplash, isVisible])
 
   if (!isVisible) return null
 
@@ -106,16 +123,22 @@ export default function SplashScreen() {
             justifyContent: 'center',
           }}
         >
-          <FloralImage
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
             src="/img/logo.png"
-            fallbackSrc="/img/Logo_Floreria (1).png"
+            onError={(e) => {
+              const target = e.currentTarget
+              if (!target.dataset.triedFallback) {
+                target.dataset.triedFallback = 'true'
+                target.src = '/img/Logo_Floreria (1).png'
+              }
+            }}
             alt="Florería Leo"
-            fill
-            priority
-            placeholder="blur"
-            blurDataURL={LOGO_BLUR_DATA_URL}
-            sizes="(max-width: 640px) 200px, 240px"
+            width={240}
+            height={240}
             style={{
+              width: '100%',
+              height: '100%',
               objectFit: 'contain',
             }}
           />
@@ -138,4 +161,5 @@ export default function SplashScreen() {
     </div>
   )
 }
+
 

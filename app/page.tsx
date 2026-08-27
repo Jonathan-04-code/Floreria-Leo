@@ -13,7 +13,6 @@ import {
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
 import FeaturedProducts from '@/components/FeaturedProducts'
-import SplashScreen from '@/components/SplashScreen'
 import { FLORAL_BLUR_DATA_URL } from '@/lib/image-constants'
 
 /* ── 3 Pilares destacados del Hero (Lucide + Texto claro) ──────── */
@@ -45,7 +44,6 @@ const pilares = [
 export default function HomePage() {
   return (
     <>
-      <SplashScreen />
       <Navbar />
       <main style={{ overflowX: 'hidden', width: '100%' }}>
 
