@@ -21,6 +21,16 @@ export default async function AdminLoginPage() {
 
     user = authUser
   } catch (err: unknown) {
+    if (
+      typeof err === 'object' &&
+      err !== null &&
+      'digest' in err &&
+      typeof (err as { digest: unknown }).digest === 'string' &&
+      ((err as { digest: string }).digest.startsWith('NEXT_') ||
+        (err as { digest: string }).digest.startsWith('DYNAMIC_'))
+    ) {
+      throw err
+    }
     // Si ocurre un error al conectar con Supabase, permitir mostrar el formulario de login
     console.error('Error verificando sesión en login:', err)
   }

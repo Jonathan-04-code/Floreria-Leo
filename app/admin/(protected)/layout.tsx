@@ -23,8 +23,19 @@ export default async function AdminProtectedLayout({
     } = await supabase.auth.getUser()
 
     user = authUser
-  } catch (error) {
-    console.error('Error in AdminProtectedLayout:', error)
+  } catch (error: unknown) {
+    // Si es un error interno de Next.js (DYNAMIC_SERVER_USAGE o NEXT_REDIRECT), permitir que Next.js lo procese
+    if (
+      typeof error === 'object' &&
+      error !== null &&
+      'digest' in error &&
+      typeof (error as { digest: unknown }).digest === 'string' &&
+      ((error as { digest: string }).digest.startsWith('NEXT_') ||
+        (error as { digest: string }).digest.startsWith('DYNAMIC_'))
+    ) {
+      throw error
+    }
+    console.error('Error de autenticación en AdminProtectedLayout:', error)
   }
 
   if (!user) {

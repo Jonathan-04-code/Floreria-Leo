@@ -5,6 +5,8 @@ import {
   Layers,
 } from 'lucide-react'
 
+export const dynamic = 'force-dynamic'
+
 export const metadata = {
   title: 'Configuración – Florería Leo Admin',
   description: 'Ajustes generales del sistema y conectividad',

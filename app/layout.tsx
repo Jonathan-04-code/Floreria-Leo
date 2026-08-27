@@ -45,11 +45,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       data-scroll-behavior="smooth"
       suppressHydrationWarning
     >
-      <head>
+      <body>
         {/* Script sincrónico anti-flash: aplica el tema antes de que React pinte */}
         <script dangerouslySetInnerHTML={{ __html: `try{var t=localStorage.getItem('fl-theme-v2');if(t==='dark')document.documentElement.setAttribute('data-theme','dark');else document.documentElement.removeAttribute('data-theme');}catch(e){}` }} />
-      </head>
-      <body>{children}</body>
+        {children}
+      </body>
     </html>
   )
 }
