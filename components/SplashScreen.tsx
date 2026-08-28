@@ -2,23 +2,46 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 
+// Variable global a nivel de módulo en la sesión del cliente (SPA).
+// Persiste en memoria durante toda la navegación entre rutas sin recargar la página.
+let globalSplashShown = false
+
 export default function SplashScreen() {
-  const [isVisible, setIsVisible] = useState(true)
+  // Inicialización: si ya se ejecutó en esta sesión, inicia directamente en false
+  const [isVisible, setIsVisible] = useState(() => {
+    if (typeof window !== 'undefined') {
+      if ((window as unknown as { __FLORERIA_SPLASH_SHOWN__?: boolean }).__FLORERIA_SPLASH_SHOWN__) {
+        return false
+      }
+    }
+    return !globalSplashShown
+  })
+
   const dismissedRef = useRef(false)
 
   const dismissSplash = useCallback(() => {
     if (dismissedRef.current) return
     dismissedRef.current = true
-    setIsVisible(false)
+    globalSplashShown = true
     if (typeof window !== 'undefined') {
+      ;(window as unknown as { __FLORERIA_SPLASH_SHOWN__?: boolean }).__FLORERIA_SPLASH_SHOWN__ = true
       document.body.style.overflow = ''
     }
+    setIsVisible(false)
   }, [])
 
   useEffect(() => {
-    if (!isVisible) return
+    // Si ya se mostró previamente o no está visible, no iniciar el temporizador ni bloquear scroll
+    if (
+      globalSplashShown ||
+      !isVisible ||
+      (typeof window !== 'undefined' &&
+        (window as unknown as { __FLORERIA_SPLASH_SHOWN__?: boolean }).__FLORERIA_SPLASH_SHOWN__)
+    ) {
+      return
+    }
 
-    // Bloquear scroll momentáneamente mientras corre la animación de bienvenida
+    // Bloquear scroll momentáneamente SOLO durante la animación de bienvenida inicial
     const originalOverflow = document.body.style.overflow
     document.body.style.overflow = 'hidden'
 
@@ -32,7 +55,10 @@ export default function SplashScreen() {
     }
   }, [isVisible, dismissSplash])
 
-  if (!isVisible) return null
+  // Si ya se mostró o no está visible, no renderizar absolutamente nada en el DOM
+  if (!isVisible || globalSplashShown) {
+    return null
+  }
 
   return (
     <div
@@ -111,6 +137,12 @@ export default function SplashScreen() {
               className="splash-logo-image"
               width={240}
               height={240}
+              style={{
+                display: 'block',
+                background: 'transparent',
+                border: 'none',
+                outline: 'none',
+              }}
             />
             {/* Destello de brillo diagonal */}
             <div className="splash-shimmer-ray" aria-hidden="true" />
