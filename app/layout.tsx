@@ -36,6 +36,24 @@ const cormorant = Cormorant_Garamond({
 export const metadata: Metadata = {
   title: 'Florería Leo – Detalles que hablan por ti',
   description: 'Arreglos florales únicos para cada ocasión especial. Ramos, centros de mesa, arreglos especiales y cotizaciones personalizadas por WhatsApp.',
+  manifest: '/manifest.json',
+  icons: {
+    icon: [
+      { url: '/apple-icon.png', sizes: '180x180', type: 'image/png' },
+      { url: '/img/LogoFloreria.jpeg', type: 'image/jpeg' },
+    ],
+    apple: [
+      { url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
+      { url: '/apple-icon.png', sizes: '180x180', type: 'image/png' },
+      { url: '/img/LogoFloreria.jpeg', sizes: '180x180', type: 'image/jpeg' },
+    ],
+    shortcut: ['/apple-icon.png'],
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'Florería Leo',
+  },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -47,6 +65,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       suppressHydrationWarning
     >
       <head>
+        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+        <link rel="apple-touch-icon-precomposed" sizes="180x180" href="/apple-touch-icon-precomposed.png" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <meta name="apple-mobile-web-app-title" content="Florería Leo" />
         <script
           dangerouslySetInnerHTML={{
             __html: `

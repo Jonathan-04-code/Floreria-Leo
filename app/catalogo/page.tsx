@@ -74,7 +74,7 @@ export default async function CatalogoPage() {
                 height: '88px',
                 borderRadius: '50%',
                 overflow: 'hidden',
-                background: '#FBECEB',
+                background: 'transparent',
                 boxShadow: '0 8px 24px rgba(216, 90, 127, 0.18)',
                 border: '2px solid rgba(216, 90, 127, 0.25)',
                 display: 'flex',
@@ -83,8 +83,8 @@ export default async function CatalogoPage() {
               }}
             >
               <FloralImage
-                src="/img/logo.png"
-                fallbackSrc="/img/Logo_Floreria (1).png"
+                src="/img/LogoFloreria.jpeg"
+                fallbackSrc="/img/LogoFloreria.jpeg"
                 alt="Florería Leo"
                 width={88}
                 height={88}
@@ -97,7 +97,7 @@ export default async function CatalogoPage() {
                   width: '88px',
                   height: '88px',
                   borderRadius: '50%',
-                  objectFit: 'contain',
+                  objectFit: 'cover',
                 }}
               />
             </div>

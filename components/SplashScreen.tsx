@@ -125,21 +125,16 @@ export default function SplashScreen() {
           <div className="splash-logo-card">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src="/img/logo.png"
-              onError={(e) => {
-                const target = e.currentTarget
-                if (!target.dataset.triedFallback) {
-                  target.dataset.triedFallback = 'true'
-                  target.src = '/img/Logo_Floreria (1).png'
-                }
-              }}
+              src="/img/LogoFloreria.jpeg"
               alt="Florería Leo"
               className="splash-logo-image"
               width={240}
               height={240}
               style={{
                 display: 'block',
-                background: 'transparent',
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
                 border: 'none',
                 outline: 'none',
               }}
