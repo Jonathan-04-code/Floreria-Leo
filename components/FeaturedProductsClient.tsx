@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useSyncExternalStore } from 'react'
+import { useState, useEffect, useSyncExternalStore } from 'react'
 import { createPortal } from 'react-dom'
 import Link from 'next/link'
 import { X } from 'lucide-react'
@@ -8,6 +8,7 @@ import { FLORAL_BLUR_DATA_URL } from '@/lib/image-constants'
 import FloralImage from '@/components/FloralImage'
 import WhatsAppQuoteButton from '@/components/WhatsAppQuoteButton'
 import type { ProductCategory } from '@/lib/whatsapp'
+import { applyProductTheme, applyLightTheme } from '@/lib/theme'
 
 const emptySubscribe = () => () => {}
 function useIsClient() {
@@ -35,6 +36,23 @@ interface Props {
 export default function FeaturedProductsClient({ products }: Props) {
   const [selectedProduct, setSelectedProduct] = useState<DisplayProduct | null>(null)
   const isClient = useIsClient()
+
+  // Sincronización automática de tema para la vista rápida de destacados:
+  // Si el arreglo seleccionado es de 'Especiales' -> activa el tema oscuro dorado existente.
+  // Al cerrar la vista rápida o para arreglos normales -> mantiene el tema claro.
+  useEffect(() => {
+    if (selectedProduct) {
+      applyProductTheme(selectedProduct.category)
+    } else {
+      applyLightTheme()
+    }
+  }, [selectedProduct])
+
+  useEffect(() => {
+    return () => {
+      applyLightTheme()
+    }
+  }, [])
 
   return (
     <section id="destacados" style={{ padding: '4.5rem 1.25rem', position: 'relative', background: 'var(--bg-primary)' }}>

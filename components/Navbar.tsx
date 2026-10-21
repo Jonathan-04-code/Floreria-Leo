@@ -3,7 +3,6 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState, useEffect, useCallback } from 'react'
-import ThemeToggle from '@/components/ThemeToggle'
 
 const links = [
   { href: '/',         label: 'Inicio',   targetId: 'top' },
@@ -160,7 +159,7 @@ export default function Navbar() {
             })}
           </div>
 
-          {/* Desktop right actions: WhatsApp Cotizar CTA + ThemeToggle */}
+          {/* Desktop right actions: WhatsApp Cotizar CTA */}
           <div className="nav-desktop" style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
             <a
               href={whatsappQuoteUrl}
@@ -177,14 +176,10 @@ export default function Navbar() {
               <WhatsAppNavIcon />
               <span>Cotizar arreglo</span>
             </a>
-            <ThemeToggle />
           </div>
 
-          {/* Mobile buttons: ThemeToggle + Hamburger */}
+          {/* Mobile button: Hamburger */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <div className="nav-toggle-mobile">
-              <ThemeToggle compact />
-            </div>
             <button
               className="nav-burger"
               onClick={() => setOpen(!open)}

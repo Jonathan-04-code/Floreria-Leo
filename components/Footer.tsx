@@ -155,6 +155,14 @@ export default function Footer() {
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', flexWrap: 'wrap' }}>
             <Link
+              href="/flyers"
+              className="footer-legal-link"
+              style={{ color: 'rgba(255,255,255,0.75)', textDecoration: 'none', fontSize: '0.8rem', transition: 'color .2s ease', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}
+            >
+              <span>Flyers Publicitarios</span>
+            </Link>
+            <span style={{ color: 'rgba(255,255,255,0.2)', fontSize: '0.75rem' }}>•</span>
+            <Link
               href="/admin"
               className="footer-legal-link"
               style={{ color: 'rgba(255,255,255,0.75)', textDecoration: 'none', fontSize: '0.8rem', transition: 'color .2s ease', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}

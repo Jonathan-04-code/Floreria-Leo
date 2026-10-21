@@ -8,6 +8,7 @@ import { createClient } from '@/lib/supabase/server'
 import { CATALOG_PRODUCTS } from '@/lib/catalog-products'
 import { FLORAL_BLUR_DATA_URL } from '@/lib/image-constants'
 import FloralImage from '@/components/FloralImage'
+import ProductThemeEffect from '@/components/ProductThemeEffect'
 
 function isSupabaseConfigured() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -80,6 +81,7 @@ export default async function ProductoPage(props: PageProps<'/producto/[id]'>) {
 
   return (
     <>
+      <ProductThemeEffect category={product.category} />
       <Navbar />
       <main style={{ paddingTop: '80px', minHeight: '100vh', background: 'var(--bg-primary)' }}>
         <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '2.5rem 1.5rem 5rem' }}>

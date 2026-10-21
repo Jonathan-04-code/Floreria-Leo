@@ -75,14 +75,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             __html: `
               (function() {
                 try {
-                  var theme = localStorage.getItem('fl-theme-v2') || localStorage.getItem('floreria-theme');
-                  if (theme === 'dark') {
-                    document.documentElement.setAttribute('data-theme', 'dark');
-                    document.documentElement.classList.add('dark');
-                  } else {
-                    document.documentElement.removeAttribute('data-theme');
-                    document.documentElement.classList.remove('dark');
-                  }
+                  localStorage.removeItem('fl-theme-v2');
+                  localStorage.removeItem('floreria-theme');
+                  document.documentElement.removeAttribute('data-theme');
+                  document.documentElement.classList.remove('dark');
                 } catch (e) {}
               })();
             `,

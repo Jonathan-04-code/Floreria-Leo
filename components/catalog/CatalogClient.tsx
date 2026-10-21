@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useMemo, useSyncExternalStore } from 'react'
+import { useState, useEffect, useLayoutEffect, useCallback, useMemo, useSyncExternalStore } from 'react'
 import { createPortal } from 'react-dom'
 import { useSearchParams, useRouter, usePathname } from 'next/navigation'
 import { Flower2, Search, X, RotateCcw } from 'lucide-react'
@@ -8,6 +8,7 @@ import { CATEGORIES, type CatalogProduct, type CategoryFilter } from '@/lib/cata
 import WhatsAppQuoteButton from '@/components/WhatsAppQuoteButton'
 import { FLORAL_BLUR_DATA_URL } from '@/lib/image-constants'
 import FloralImage from '@/components/FloralImage'
+import { isEspecialCategory, applyDarkTheme, applyLightTheme } from '@/lib/theme'
 
 const emptySubscribe = () => () => {}
 function useIsClient() {
@@ -17,6 +18,8 @@ function useIsClient() {
     () => false
   )
 }
+
+const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : useEffect
 
 const CATEGORY_LABELS: Record<string, string> = {
   ramos: 'Ramo de Flores',
@@ -229,13 +232,14 @@ export default function CatalogClient({ products }: Props) {
     return 'all'
   }, [urlCategoryParam])
 
-  const [activeCategory, setActiveCategory] = useState<CategoryFilter>(initialCategory)
+  const [userSelectedCategory, setUserSelectedCategory] = useState<CategoryFilter | null>(null)
+  const activeCategory: CategoryFilter = userSelectedCategory ?? initialCategory
   const [searchQuery, setSearchQuery] = useState('')
   const [modalProduct, setModalProduct] = useState<CatalogProduct | null>(null)
   const isClient = useIsClient()
 
   const handleSelectCategory = (category: CategoryFilter) => {
-    setActiveCategory(category)
+    setUserSelectedCategory(category)
     const params = new URLSearchParams(searchParams.toString())
     if (category !== 'all') {
       params.set('categoria', category)
@@ -285,6 +289,28 @@ export default function CatalogClient({ products }: Props) {
 
   const openModal = useCallback((p: CatalogProduct) => setModalProduct(p), [])
   const closeModal = useCallback(() => setModalProduct(null), [])
+
+  // Sincronización automática de tema:
+  // 1. Al dar click o seleccionar la categoría 'Especiales' en el catálogo -> activa el modo oscuro con dorado existente.
+  // 2. Al abrir un producto perteneciente a 'Especiales' -> activa el modo oscuro con dorado.
+  // 3. Al seleccionar cualquier otra categoría o cerrar el producto -> regresa automáticamente al modo claro por defecto.
+  useIsomorphicLayoutEffect(() => {
+    const isEspecialCategorySelected = isEspecialCategory(activeCategory)
+    const isModalEspecial = modalProduct ? isEspecialCategory(modalProduct.category) : false
+
+    if (isEspecialCategorySelected || isModalEspecial) {
+      applyDarkTheme()
+    } else {
+      applyLightTheme()
+    }
+  }, [activeCategory, modalProduct])
+
+  // Asegurar retorno al tema claro si se desmonta el catálogo
+  useEffect(() => {
+    return () => {
+      applyLightTheme()
+    }
+  }, [])
 
   const handleClearAllFilters = () => {
     setSearchQuery('')
