@@ -27,15 +27,32 @@ function isSupabaseConfigured() {
 }
 
 function mapProduct(p: Record<string, unknown>): CatalogProduct {
+  const rawCat = (((p.category as string) || (p.categoria as string) || 'ramos').toLowerCase()) as CatalogProduct['category']
+  const rawBadge = (p.badge as string) || ''
+  const derivedSeasons: string[] = []
+
+  if (p.seasons && Array.isArray(p.seasons)) {
+    derivedSeasons.push(...(p.seasons as string[]))
+  }
+  if (/febrero|valent[ií]n/i.test(rawBadge) || /febrero/i.test(rawCat)) {
+    derivedSeasons.push('14-de-febrero', 'san-valentin')
+  }
+  if (/madre/i.test(rawBadge) || /madres/i.test(rawCat)) {
+    derivedSeasons.push('dia-de-las-madres')
+  }
+  if (/gradua/i.test(rawBadge) || /graduacion/i.test(rawCat)) {
+    derivedSeasons.push('graduaciones')
+  }
+
   return {
     id: String(p.id),
     name: String(p.name || ''),
     description: (p.description as string) || (p.descripcion as string) || '',
     image: (p.image_url as string) || (p.imagen as string) || '/img/RamoRosas.png',
-    category: (((p.category as string) || (p.categoria as string) || 'ramos').toLowerCase()) as CatalogProduct['category'],
+    category: rawCat,
     badge: (p.badge as string) ?? undefined,
     inStock: p.active !== undefined ? Boolean(p.active) : (p.activo !== undefined ? Boolean(p.activo) : true),
-    seasons: p.seasons ? (Array.isArray(p.seasons) ? (p.seasons as string[]) : undefined) : undefined,
+    seasons: derivedSeasons.length > 0 ? Array.from(new Set(derivedSeasons)) : undefined,
   }
 }
 

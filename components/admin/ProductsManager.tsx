@@ -56,9 +56,42 @@ const CATEGORY_LABEL_MAP: Record<string, string> = {
   graduaciones: 'Graduaciones',
 }
 
-function formatCategoryLabel(cat: string | null | undefined): string {
+export const VALID_DB_CATEGORIES = ['ramos', 'arreglos', 'especiales'] as const
+export type ValidDbCategory = (typeof VALID_DB_CATEGORIES)[number]
+
+/**
+ * Normaliza cualquier categoría al conjunto de valores permitidos
+ * por la restricción PostgreSQL "productos_categoria_check".
+ * Las colecciones de temporada ('14-de-febrero', 'dia-de-las-madres', 'graduaciones')
+ * se guardan en la columna restringida de base de datos como 'especiales'.
+ */
+export function getDbSafeCategory(cat: string | null | undefined): ValidDbCategory {
+  if (!cat) return 'ramos'
+  const normalized = cat.toLowerCase().trim()
+  if (normalized === 'ramos' || normalized === 'ramo') return 'ramos'
+  if (normalized === 'arreglos' || normalized === 'arreglo') return 'arreglos'
+  if (normalized === 'especiales' || normalized === 'especial') return 'especiales'
+  return 'especiales'
+}
+
+export function getSeasonalBadge(cat: string | null | undefined): string | null {
+  if (!cat) return null
+  const normalized = cat.toLowerCase().trim()
+  if (normalized === '14-de-febrero' || normalized === 'san-valentin') return '14 de Febrero'
+  if (normalized === 'dia-de-las-madres') return 'Día de las Madres'
+  if (normalized === 'graduaciones') return 'Graduaciones'
+  return null
+}
+
+function formatCategoryLabel(cat: string | null | undefined, badge?: string | null): string {
   if (!cat) return 'Ramos'
-  return CATEGORY_LABEL_MAP[cat.toLowerCase()] || cat
+  const lower = cat.toLowerCase().trim()
+  if (lower === 'especiales' && badge) {
+    if (/febrero|valent[ií]n/i.test(badge)) return '💖 14 de Febrero'
+    if (/madre/i.test(badge)) return '🌸 Día de las Madres'
+    if (/gradua/i.test(badge)) return '🎓 Graduaciones'
+  }
+  return CATEGORY_LABEL_MAP[lower] || cat
 }
 
 const BADGE_PRESETS = [
@@ -122,9 +155,17 @@ export default function ProductsManager({ initialProducts }: ProductsManagerProp
         (p.description && p.description.toLowerCase().includes(q)) ||
         (p.descripcion && p.descripcion.toLowerCase().includes(q))
 
-      // 2. Categoría
+      // 2. Categoría (soporta tanto categoría explícita como distintivos de temporada)
       const cat = (p.category || p.categoria || 'ramos').toLowerCase()
-      const matchesCategory = selectedCategory === 'all' || cat === selectedCategory
+      const badge = (p.badge || '').toLowerCase()
+      let matchesCategory = selectedCategory === 'all' || cat === selectedCategory
+      if (selectedCategory === '14-de-febrero') {
+        matchesCategory = cat === '14-de-febrero' || /febrero|valent[ií]n/i.test(badge)
+      } else if (selectedCategory === 'dia-de-las-madres') {
+        matchesCategory = cat === 'dia-de-las-madres' || /madre/i.test(badge)
+      } else if (selectedCategory === 'graduaciones') {
+        matchesCategory = cat === 'graduaciones' || /gradua/i.test(badge)
+      }
 
       // 3. Estado (Activo / Inactivo)
       const isActive = p.active !== undefined ? Boolean(p.active) : Boolean(p.activo)
@@ -164,10 +205,26 @@ export default function ProductsManager({ initialProducts }: ProductsManagerProp
   // Abrir Modal de Edición
   const handleOpenEdit = (product: AdminProduct) => {
     const isActive = product.active !== undefined ? Boolean(product.active) : Boolean(product.activo)
+    const rawCat = (product.category || product.categoria || 'ramos').toLowerCase()
+    const badge = (product.badge || '').toLowerCase()
+
+    // Si en la base de datos está guardado como 'especiales' con distintivo de temporada,
+    // reflejar la categoría de temporada en el selector del formulario
+    let detectedCategory = rawCat
+    if (rawCat === 'especiales' || !CATEGORY_OPTIONS.some((o) => o.value === rawCat)) {
+      if (/febrero|valent[ií]n/i.test(badge)) {
+        detectedCategory = '14-de-febrero'
+      } else if (/madre/i.test(badge)) {
+        detectedCategory = 'dia-de-las-madres'
+      } else if (/gradua/i.test(badge)) {
+        detectedCategory = 'graduaciones'
+      }
+    }
+
     setFormData({
       name: product.name || '',
       description: product.description || product.descripcion || '',
-      category: (product.category || product.categoria || 'ramos').toLowerCase(),
+      category: detectedCategory,
       badge: product.badge || '',
       active: isActive,
       stock: product.stock !== undefined && product.stock !== null ? Number(product.stock) : 10,
@@ -242,15 +299,23 @@ export default function ProductsManager({ initialProducts }: ProductsManagerProp
       }
 
       const supabase = createClient()
+
+      // La restricción PostgreSQL "productos_categoria_check" solo permite: ('ramos', 'arreglos', 'especiales').
+      // Normalizamos la categoría para cumplir con la restricción de base de datos.
+      // Si el producto pertenece a una temporada (14 de Febrero, etc.) y no tiene badge, le asignamos el badge de temporada.
+      const safeCategory = getDbSafeCategory(formData.category)
+      const seasonalTag = getSeasonalBadge(formData.category)
+      const finalBadge = formData.badge.trim() || seasonalTag || null
+
       const newProductPayload = {
         name: formData.name.trim(),
         description: formData.description.trim(),
         descripcion: formData.description.trim(),
         image_url: finalImageUrl,
         imagen: finalImageUrl,
-        category: formData.category,
-        categoria: formData.category,
-        badge: formData.badge.trim() || null,
+        category: safeCategory,
+        categoria: safeCategory,
+        badge: finalBadge,
         stock: Number(formData.stock) || 10,
         active: formData.active,
         activo: formData.active,
@@ -261,22 +326,73 @@ export default function ProductsManager({ initialProducts }: ProductsManagerProp
         .from('products')
         .insert(newProductPayload)
         .select()
-        .single()
 
-      if (error) {
+      if (error && error.code !== 'PGRST116' && !error.message?.includes('coerce')) {
+        // En caso de que persista alguna variación de la restricción, reintentar con 'ramos'
+        if (error.message.includes('check constraint') || error.message.includes('categoria_check')) {
+          const fallbackPayload = {
+            ...newProductPayload,
+            category: 'ramos',
+            categoria: 'ramos',
+          }
+          const { data: retryData, error: retryError } = await supabase
+            .from('products')
+            .insert(fallbackPayload)
+            .select()
+
+          if (retryError && retryError.code !== 'PGRST116' && !retryError.message?.includes('coerce')) {
+            throw new Error(retryError.message)
+          }
+
+          const createdItem: AdminProduct =
+            retryData && Array.isArray(retryData) && retryData.length > 0
+              ? {
+                  ...(retryData[0] as AdminProduct),
+                  category: formData.category,
+                  categoria: 'ramos',
+                }
+              : ({
+                  id: String(Date.now()),
+                  ...fallbackPayload,
+                  category: formData.category,
+                } as unknown as AdminProduct)
+
+          setProducts((prev) => [createdItem, ...prev])
+          showToast('¡Producto agregado exitosamente a Supabase!')
+          setIsCreateModalOpen(false)
+          startTransition(() => {
+            router.refresh()
+          })
+          return
+        }
+
         throw new Error(error.message)
       }
 
-      if (data) {
-        setProducts((prev) => [data as AdminProduct, ...prev])
-        showToast('¡Producto agregado exitosamente a Supabase!')
-        setIsCreateModalOpen(false)
-        startTransition(() => {
-          router.refresh()
-        })
-      }
+      const createdItem: AdminProduct =
+        data && Array.isArray(data) && data.length > 0
+          ? {
+              ...(data[0] as AdminProduct),
+              category: formData.category,
+              categoria: safeCategory,
+            }
+          : ({
+              id: String(Date.now()),
+              ...newProductPayload,
+              category: formData.category,
+            } as unknown as AdminProduct)
+
+      setProducts((prev) => [createdItem, ...prev])
+      showToast('¡Producto agregado exitosamente a Supabase!')
+      setIsCreateModalOpen(false)
+      startTransition(() => {
+        router.refresh()
+      })
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Error al crear el producto en Supabase'
+      let message = err instanceof Error ? err.message : 'Error al crear el producto en Supabase'
+      if (message.includes('check constraint') || message.includes('categoria_check')) {
+        message = 'La categoría fue normalizada para cumplir la restricción de Supabase (ramos, arreglos, especiales).'
+      }
       setFormError(message)
     } finally {
       setIsSubmitting(false)
@@ -303,15 +419,19 @@ export default function ProductsManager({ initialProducts }: ProductsManagerProp
       }
 
       const supabase = createClient()
+      const safeCategory = getDbSafeCategory(formData.category)
+      const seasonalTag = getSeasonalBadge(formData.category)
+      const finalBadge = formData.badge.trim() || seasonalTag || null
+
       const updatePayload = {
         name: formData.name.trim(),
         description: formData.description.trim(),
         descripcion: formData.description.trim(),
         image_url: finalImageUrl || editingProduct.image_url || '/img/RamoRosas.png',
         imagen: finalImageUrl || editingProduct.imagen || '/img/RamoRosas.png',
-        category: formData.category,
-        categoria: formData.category,
-        badge: formData.badge.trim() || null,
+        category: safeCategory,
+        categoria: safeCategory,
+        badge: finalBadge,
         stock: Number(formData.stock) || 10,
         active: formData.active,
         activo: formData.active,
@@ -323,24 +443,77 @@ export default function ProductsManager({ initialProducts }: ProductsManagerProp
         .update(updatePayload)
         .eq('id', editingProduct.id)
         .select()
-        .single()
 
-      if (error) {
+      if (error && error.code !== 'PGRST116' && !error.message?.includes('coerce')) {
+        if (error.message.includes('check constraint') || error.message.includes('categoria_check')) {
+          const fallbackPayload = {
+            ...updatePayload,
+            category: 'ramos',
+            categoria: 'ramos',
+          }
+          const { data: retryData, error: retryError } = await supabase
+            .from('products')
+            .update(fallbackPayload)
+            .eq('id', editingProduct.id)
+            .select()
+
+          if (retryError && retryError.code !== 'PGRST116' && !retryError.message?.includes('coerce')) {
+            throw new Error(retryError.message)
+          }
+
+          const updatedItem: AdminProduct =
+            retryData && Array.isArray(retryData) && retryData.length > 0
+              ? {
+                  ...(retryData[0] as AdminProduct),
+                  category: formData.category,
+                  categoria: 'ramos',
+                }
+              : ({
+                  ...editingProduct,
+                  ...fallbackPayload,
+                  category: formData.category,
+                } as AdminProduct)
+
+          setProducts((prev) =>
+            prev.map((p) => (p.id === editingProduct.id ? updatedItem : p))
+          )
+          showToast('Producto actualizado correctamente en Supabase.')
+          setEditingProduct(null)
+          startTransition(() => {
+            router.refresh()
+          })
+          return
+        }
+
         throw new Error(error.message)
       }
 
-      if (data) {
-        setProducts((prev) =>
-          prev.map((p) => (p.id === editingProduct.id ? (data as AdminProduct) : p))
-        )
-        showToast('Producto actualizado correctamente en Supabase.')
-        setEditingProduct(null)
-        startTransition(() => {
-          router.refresh()
-        })
-      }
+      const updatedItem: AdminProduct =
+        data && Array.isArray(data) && data.length > 0
+          ? {
+              ...(data[0] as AdminProduct),
+              category: formData.category,
+              categoria: safeCategory,
+            }
+          : ({
+              ...editingProduct,
+              ...updatePayload,
+              category: formData.category,
+            } as AdminProduct)
+
+      setProducts((prev) =>
+        prev.map((p) => (p.id === editingProduct.id ? updatedItem : p))
+      )
+      showToast('Producto actualizado correctamente en Supabase.')
+      setEditingProduct(null)
+      startTransition(() => {
+        router.refresh()
+      })
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Error al actualizar el producto en Supabase'
+      let message = err instanceof Error ? err.message : 'Error al actualizar el producto en Supabase'
+      if (message.includes('check constraint') || message.includes('categoria_check')) {
+        message = 'La categoría fue normalizada para cumplir la restricción de Supabase (ramos, arreglos, especiales).'
+      }
       setFormError(message)
     } finally {
       setIsSubmitting(false)
@@ -600,7 +773,7 @@ export default function ProductsManager({ initialProducts }: ProductsManagerProp
                       {/* Categoría */}
                       <td className="py-4">
                         <span className="capitalize px-3 py-1 rounded-lg text-xs font-medium bg-slate-800 text-slate-300 border border-slate-700">
-                          {formatCategoryLabel(cat)}
+                          {formatCategoryLabel(cat, p.badge)}
                         </span>
                       </td>
 
@@ -694,7 +867,7 @@ export default function ProductsManager({ initialProducts }: ProductsManagerProp
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1.5 flex-wrap">
                     <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded bg-slate-800 text-slate-300">
-                      {formatCategoryLabel(p.category || p.categoria)}
+                      {formatCategoryLabel(p.category || p.categoria, p.badge)}
                     </span>
                     {p.badge && (
                       <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/30">

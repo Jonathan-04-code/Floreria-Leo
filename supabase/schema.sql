@@ -128,7 +128,31 @@ ALTER TABLE public.products
   DROP COLUMN IF EXISTS price;
 
 
--- ── 5. Notas de configuración ────────────────────────────────
+-- ── 8. Migración: actualizar restricción productos_categoria_check ──
+-- Si en Supabase recibes el error "violates check constraint productos_categoria_check",
+-- ejecuta este bloque en el SQL Editor para actualizar la restricción y permitir
+-- tanto categorías base como categorías de temporada directamente:
+ALTER TABLE public.products DROP CONSTRAINT IF EXISTS productos_categoria_check;
+ALTER TABLE public.products DROP CONSTRAINT IF EXISTS products_category_check;
+ALTER TABLE public.products DROP CONSTRAINT IF EXISTS products_categoria_check;
+
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'products' AND column_name = 'categoria') THEN
+    ALTER TABLE public.products
+      ADD CONSTRAINT productos_categoria_check
+      CHECK (categoria IN ('ramos', 'arreglos', 'especiales', '14-de-febrero', 'dia-de-las-madres', 'graduaciones'));
+  END IF;
+
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'products' AND column_name = 'category') THEN
+    ALTER TABLE public.products
+      ADD CONSTRAINT products_category_check
+      CHECK (category IN ('ramos', 'arreglos', 'especiales', '14-de-febrero', 'dia-de-las-madres', 'graduaciones'));
+  END IF;
+END $$;
+
+
+-- ── 9. Notas de configuración ────────────────────────────────
 --
 -- AUTENTICACIÓN:
 --   - Ir a Authentication → Users → Invite user

@@ -262,15 +262,18 @@ export default function CatalogClient({ products }: Props) {
       } else if (activeCategory === '14-de-febrero') {
         const matchesCategory = p.category === '14-de-febrero'
         const matchesSeason = p.seasons?.some((s) => s === '14-de-febrero' || s === 'san-valentin')
-        if (!matchesCategory && !matchesSeason) return false
+        const matchesBadge = p.badge ? /febrero|valent[ií]n/i.test(p.badge) : false
+        if (!matchesCategory && !matchesSeason && !matchesBadge) return false
       } else if (activeCategory === 'dia-de-las-madres') {
         const matchesCategory = p.category === 'dia-de-las-madres'
         const matchesSeason = p.seasons?.some((s) => s === 'dia-de-las-madres')
-        if (!matchesCategory && !matchesSeason) return false
+        const matchesBadge = p.badge ? /madre/i.test(p.badge) : false
+        if (!matchesCategory && !matchesSeason && !matchesBadge) return false
       } else if (activeCategory === 'graduaciones') {
         const matchesCategory = p.category === 'graduaciones'
         const matchesSeason = p.seasons?.some((s) => s === 'graduaciones')
-        if (!matchesCategory && !matchesSeason) return false
+        const matchesBadge = p.badge ? /gradua/i.test(p.badge) : false
+        if (!matchesCategory && !matchesSeason && !matchesBadge) return false
       } else {
         if (p.category !== activeCategory) return false
       }

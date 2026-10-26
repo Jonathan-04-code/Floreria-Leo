@@ -44,7 +44,7 @@ export default async function ProductoPage(props: PageProps<'/producto/[id]'>) {
         .from('products')
         .select('*')
         .eq('id', id)
-        .single()
+        .maybeSingle()
       if (data) {
         product = {
           id: data.id,

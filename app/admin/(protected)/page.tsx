@@ -67,16 +67,25 @@ export default async function AdminDashboardPage() {
         (p.category || p.categoria || '').toLowerCase() === 'especiales'
     ).length,
     febrero: products.filter(
-      (p: DashboardProductRow) =>
-        (p.category || p.categoria || '').toLowerCase() === '14-de-febrero'
+      (p: DashboardProductRow) => {
+        const cat = (p.category || p.categoria || '').toLowerCase()
+        const badge = (p.badge || '').toLowerCase()
+        return cat === '14-de-febrero' || /febrero|valent[ií]n/i.test(badge)
+      }
     ).length,
     madres: products.filter(
-      (p: DashboardProductRow) =>
-        (p.category || p.categoria || '').toLowerCase() === 'dia-de-las-madres'
+      (p: DashboardProductRow) => {
+        const cat = (p.category || p.categoria || '').toLowerCase()
+        const badge = (p.badge || '').toLowerCase()
+        return cat === 'dia-de-las-madres' || /madre/i.test(badge)
+      }
     ).length,
     graduaciones: products.filter(
-      (p: DashboardProductRow) =>
-        (p.category || p.categoria || '').toLowerCase() === 'graduaciones'
+      (p: DashboardProductRow) => {
+        const cat = (p.category || p.categoria || '').toLowerCase()
+        const badge = (p.badge || '').toLowerCase()
+        return cat === 'graduaciones' || /gradua/i.test(badge)
+      }
     ).length,
   }
 
